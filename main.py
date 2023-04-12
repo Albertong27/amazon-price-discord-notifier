@@ -61,19 +61,32 @@ async def on_ready():
 async def on_message(message):
     if message.channel.id == channel_id and message.author != client.user:
         if message.content.startswith('!add'):
-            if message.content[5:].startswith('https://www.amazon.sg'):
-                items.append({'id': len(items) + 1, 'url': message.content[5:], 'threshold': 200})
-                await message.channel.send(f"Added Amazon item {message.content[5:]} with threshold $200 and ID {len(items)}")
-                save_items()
-            else:
-                await message.channel.send("Invalid Amazon item URL")
+            try:
+                url = message.content.split(' ')[1]
+                response = requests.get(url)
+                soup = BeautifulSoup(response.content, 'html.parser')
+                title_tag = soup.find('span', {'id': 'productTitle'})
+                price_tag = soup.find('span', {'class': 'a-offscreen'})
+                if title_tag is not None and price_tag is not None:
+                    title = title_tag.text.strip()
+                    price = float(soup.find('span', {'class': 'a-offscreen'}).text.replace('S$', ''))
+                    item = {'id': len(items) + 1, 'name': title, 'url': url, 'threshold': price, 'history': []}
+                    items.append(item)
+                    save_items()
+                    await message.channel.send(f"Item '{title}' has been added with a threshold of S${price:.2f}")
+                else:
+                    await message.channel.send("Failed to extract product title and/or price - is none")
+            except IndexError:
+                await message.channel.send("Please provide a valid Amazon URL")
+            except ValueError:
+                await message.channel.send("Failed to extract price from Amazon page - is value error")
         elif message.content.startswith('!remove'):
             try:
                 item_id = int(message.content[8:])
                 item = next((x for x in items if x['id'] == item_id), None)
                 if item:
                     items.remove(item)
-                    await message.channel.send(f"Removed Amazon item {item['url']}")
+                    await message.channel.send(f"Removed Amazon item <{item['url']}>")
                     save_items()
                 else:
                     await message.channel.send("Invalid item ID")
@@ -82,7 +95,7 @@ async def on_message(message):
         elif message.content.startswith('!list'):
             message_text = "Amazon items:\n"
             for item in items:
-                message_text += f"{item['id']}. {item['url']} (threshold: ${item['threshold']})\n"
+                message_text += f"{item['id']}. <{item['url']}> (threshold: ${item['threshold']})\n"
             await message.channel.send(message_text)
         elif message.content.startswith('!threshold'):
             try:
@@ -92,7 +105,7 @@ async def on_message(message):
                 item = next((x for x in items if x['id'] == item_id), None)
                 if item:
                     item['threshold'] = new_threshold
-                    await message.channel.send(f"Price threshold updated to ${new_threshold} for item {item_id} ({item['url']})")
+                    await message.channel.send(f"Price threshold updated to ${new_threshold} for item {item_id} (<{item['url']}>)")
                     save_items()
                 else:
                     await message.channel.send("Invalid item ID")
