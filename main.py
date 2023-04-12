@@ -95,7 +95,7 @@ async def on_message(message):
         elif message.content.startswith('!list'):
             message_text = "Amazon items:\n"
             for item in items:
-                message_text += f"{item['id']}. <{item['url']}> (threshold: ${item['threshold']})\n"
+                message_text += f"{item['id']}. <{item['url']}> (threshold: S${item['threshold']})\n"
             await message.channel.send(message_text)
         elif message.content.startswith('!threshold'):
             try:
@@ -105,7 +105,7 @@ async def on_message(message):
                 item = next((x for x in items if x['id'] == item_id), None)
                 if item:
                     item['threshold'] = new_threshold
-                    await message.channel.send(f"Price threshold updated to ${new_threshold} for item {item_id} (<{item['url']}>)")
+                    await message.channel.send(f"Price threshold updated to S${new_threshold} for item {item_id} (<{item['url']}>)")
                     save_items()
                 else:
                     await message.channel.send("Invalid item ID")
