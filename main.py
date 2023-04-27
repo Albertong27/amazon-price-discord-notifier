@@ -52,7 +52,7 @@ async def on_ready():
                 continue
             if price < item['threshold']:
                 channel = client.get_channel(channel_id)
-                message = f"The price for {title} has dropped to ${price}."
+                message = f"The price for {title}(<{item['url']}>) has dropped to ${price}."
                 if channel is not None:
                     await channel.send(message)
         await asyncio.sleep(60*60*6)
@@ -111,10 +111,6 @@ async def on_message(message):
                     await message.channel.send("Invalid item ID")
             except (ValueError, IndexError):
                 await message.channel.send("Invalid item ID or threshold")
-        elif message.content.startswith('!ping'):
-            await message.channel.send("Pong!")
-        elif message.content.startswith('!help'):
-            await message.channel.send("!ping, !add, !remove, !threshold")
         elif message.content.startswith('!history'):
             try:
                 item_id = int(message.content[9:])
@@ -130,6 +126,11 @@ async def on_message(message):
                     await message.channel.send("Invalid item ID or no price history available")
             except ValueError:
                 await message.channel.send("Invalid item ID")
+        elif message.content.startswith('!ping'):
+            await message.channel.send("Pong!")
+        elif message.content.startswith('!help'):
+            await message.channel.send("!ping, !add, !remove, !threshold")
+        
 
 async def main():
     await client.start(bot_token)
