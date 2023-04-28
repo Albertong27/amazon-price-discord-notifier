@@ -46,6 +46,8 @@ async def on_ready():
                 
                 if 'history' not in item: item['history'] = []
                 item['history'].append({'timestamp': time.time(), 'price': price})
+                # Auto delete history > 1 month
+                item['history'] = [x for x in item['history'] if x['timestamp'] > (time.time() - 2592000)]
                 save_items()
             except:
                 print("Something Wrong at main checker loop")
