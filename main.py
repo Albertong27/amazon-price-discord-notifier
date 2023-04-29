@@ -2,6 +2,7 @@ import requests, configparser
 import asyncio
 from bs4 import BeautifulSoup
 import discord, json, time
+from logger import logger_module
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -12,6 +13,7 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 bot_token = config.get('Discord', 'bot_token')
 channel_id = int(config.get('Discord', 'channel_id'))
+logg = logger_module(config.get('log', 'dir'))
 
 item_file_path = 'items.json'
 
@@ -24,6 +26,7 @@ for i in range(len(items)):
 def save_items():
     with open(item_file_path, 'w') as f:
         json.dump(items, f)
+    logg.log("info","Items json stored")
 
 @client.event
 async def on_ready():
@@ -49,8 +52,10 @@ async def on_ready():
                 # Auto delete history > 1 month
                 item['history'] = [x for x in item['history'] if x['timestamp'] > (time.time() - 2592000)]
                 save_items()
-            except:
+                logg.log("info","Routine execution complete")
+            except Exception as e:
                 print("Something Wrong at main checker loop")
+                logg.log("error",f'An error occurred: {str(e)}')
                 continue
             if price < item['threshold']:
                 channel = client.get_channel(channel_id)
@@ -76,6 +81,7 @@ async def on_message(message):
                     items.append(item)
                     save_items()
                     await message.channel.send(f"Item '{title}' has been added with a threshold of S${price:.2f}")
+                    logg.log("info",f"User added new item with url {url}")
                 else:
                     await message.channel.send("Failed to extract product title and/or price - is none")
             except IndexError:
